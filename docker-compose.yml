@@ -1,0 +1,105 @@
+version: '2'
+services:
+
+  web:
+    image: ansible/awx_web:1.0.5.22
+    depends_on:
+      - rabbitmq
+      - memcached
+      - postgres
+    ports:
+      - "8052:8052"
+    hostname: awxweb
+    user: root
+    restart: unless-stopped
+    environment:
+      SECRET_KEY: secret
+      DATABASE_NAME: awx
+      DATABASE_USER: awx
+      DATABASE_PASSWORD: awx
+      DATABASE_PORT: 5432
+      DATABASE_HOST: postgres
+      RABBITMQ_USER: guest
+      RABBITMQ_PASSWORD: guest
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_VHOST: awx
+      MEMCACHED_HOST: memcached
+      MEMCACHED_PORT: 11211
+      AWX_ADMIN_USER: admin
+      AWX_ADMIN_PASSWORD: password
+
+  task:
+    image: ansible/awx_task:1.0.5.22
+    privileged: true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - rabbitmq
+      - memcached
+      - web
+      - postgres
+    hostname: awx
+    user: root
+    restart: unless-stopped
+    environment:
+      SECRET_KEY: secret
+      DATABASE_NAME: awx
+      DATABASE_USER: awx
+      DATABASE_PASSWORD: awx
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      RABBITMQ_USER: guest
+      RABBITMQ_PASSWORD: guest
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_VHOST: awx
+      MEMCACHED_HOST: memcached
+      MEMCACHED_PORT: 11211
+      AWX_ADMIN_USER: admin
+      AWX_ADMIN_PASSWORD: password
+
+  rabbitmq:
+    image: "rabbitmq:3.7.4"
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_VHOST: awx
+      RABBITMQ_ERLANG_COOKIE: cookiemonster
+
+  memcached:
+    image: memcached:1.5.7-alpine
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:9.6.8
+    restart: unless-stopped
+    volumes:
+      - /home/florian/sources/pydays/docker_data/pg:/var/lib/postgresql/data:Z
+    environment:
+      POSTGRES_USER: awx
+      POSTGRES_PASSWORD: awx
+      POSTGRES_DB: awx
+      PGDATA: /var/lib/postgresql/data/pgdata
+
+  ansible_web:
+    image: centos:7
+    command: /usr/sbin/init
+    privileged: true
+    ports:
+      - 8000:8000
+    environment:
+      container: docker
+    stop_grace_period: 1s
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+
+  ansible_pg:
+    image: centos:7
+    command: /usr/sbin/init
+    privileged: true
+    environment:
+      container: docker
+    stop_grace_period: 1s
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+

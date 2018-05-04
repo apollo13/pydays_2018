@@ -1,0 +1,35 @@
+---
+
+- name: Set default locales
+  command: localectl set-locale LANG=en_US.utf8
+  changed_when: false
+
+- name: Set timezone to Europe/Vienna
+  timezone:
+    name: Europe/Vienna
+
+- name: Enable EPEL
+  yum:
+    name: epel-release
+    state: present
+  register: epel_installed
+
+- name: Install basic system packages
+  yum:
+    name: '{{ item }}'
+    state: present
+  loop:
+    - ntp
+    - sudo
+
+- name: Start and enable ntp
+  service:
+    name: ntpd
+    state: started
+    enabled: true
+
+- name: Configure NTP
+  template:
+    src: ntp.conf.j2
+    dest: /etc/ntp.conf
+  notify: Restart NTP

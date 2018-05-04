@@ -1,0 +1,9 @@
+[database]
+db1 ansible_connection=docker ansible_host=demo3_ansible_pg_1
+
+[web]
+web1 ansible_connection=docker ansible_host=demo3_ansible_web_1
+
+[centos:children]
+web
+database

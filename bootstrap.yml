@@ -1,0 +1,31 @@
+- hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Test connectivity
+      ping:
+        data: pong
+
+  roles:
+    - bootstrap
+
+  tags:
+    - bootstrap
+
+- hosts: database
+  gather_facts: no
+
+  roles:
+    - database
+
+  tags:
+    - database
+
+- hosts: web
+  gather_facts: no
+
+  roles:
+    - appserver
+
+  tags:
+    - appserver

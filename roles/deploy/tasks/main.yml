@@ -1,0 +1,71 @@
+---
+
+- name: Create application structure
+  file:
+    name: "/home/web/{{ item }}"
+    state: directory
+  loop:
+    - conf
+    - media
+    - static
+
+- name: Checkout repository
+  git:
+    repo: https://github.com/apollo13/django_example.git
+    dest: /home/web/code/
+
+- name: Install python packages
+  pip:
+    requirements: /home/web/code/requirements.txt
+    virtualenv: /home/web/venv
+
+- name: Upload settings.py
+  template:
+    src: django_settings.py.j2
+    dest: /home/web/conf/django_settings.py
+
+- name: Migrate database
+  django_manage:
+    command: migrate
+    settings: django_settings
+    virtualenv: /home/web/venv
+    pythonpath: /home/web/conf
+    app_path: /home/web/code
+
+- name: Collect static files
+  django_manage:
+    command: collectstatic
+    settings: django_settings
+    virtualenv: /home/web/venv
+    pythonpath: /home/web/conf
+    app_path: /home/web/code
+
+- name: Upload initial data
+  copy:
+    src: initial.json
+    dest: /home/web/conf/initial.json
+
+- name: Check if initial setup was done
+  stat:
+    path: /home/web/conf/initial_setup_done
+  register: initial_setup_result
+
+- name: Load initial data
+  django_manage:
+    command: loaddata
+    fixtures: /home/web/conf/initial.json
+    settings: django_settings
+    virtualenv: /home/web/venv
+    pythonpath: /home/web/conf
+    app_path: /home/web/code
+  when: initial_setup_result.stat.exists == False
+  register: load_data_result
+
+- name: Create initial_setup_done file
+  file:
+    dest: /home/web/conf/initial_setup_done
+    state: touch
+  when: load_data_result.changed
+
+- name: Reload Django app
+  shell: echo r > /home/web/conf/fifo

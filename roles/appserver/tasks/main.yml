@@ -1,0 +1,30 @@
+---
+
+- name: Create application user
+  user:
+    name: web
+
+- name: Install required packages
+  yum:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - python-pip
+    - python-virtualenv
+    - git
+    - uwsgi
+    - uwsgi-plugin-python
+
+- name: Enable and start uwsgi
+  service:
+    name: uwsgi
+    enabled: yes
+    state: started
+
+- name: Install uwsgi vassal config
+  copy:
+    src: app.ini
+    dest: /etc/uwsgi.d/app.ini
+    mode: 0600
+    owner: web
+    group: web
